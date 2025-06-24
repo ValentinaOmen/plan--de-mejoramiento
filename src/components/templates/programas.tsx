@@ -5,6 +5,7 @@ import GlobalTable from "../organismos/Table";
 import { Programa } from "../../types/programa";
 import Boton from "../atomos/Boton";
 import { X } from "lucide-react";
+import Form from "../organismos/Form";
 
 interface ProgramasProps {
     userName?: string;
@@ -14,20 +15,13 @@ const Programas: React.FC<ProgramasProps> = ({ userName }) => {
     const [programas, setProgramas] = useState<Programa[]>([]);
     const [showModal, setShowModal] = useState(false);
     const [editingPrograma, setEditingPrograma] = useState<Programa | null>(null);
-    const [formData, setFormData] = useState({
-        nombre: '',
-        tipo: ''
-    });
-
+    // Ya no necesitamos formData ni setFormData, lo maneja el Form global
+// esto es para editar
     const handleEdit = (programa: Programa) => {
         setEditingPrograma(programa);
-        setFormData({
-            nombre: programa.nombre,
-            tipo: programa.tipo.toString()
-        });
         setShowModal(true);
     };
-
+// esto es para eliminar
     const handleDelete = (programa: Programa) => {
         const confirmDelete = window.confirm('¿Está seguro de eliminar este programa?');
         if (confirmDelete) {
@@ -35,15 +29,17 @@ const Programas: React.FC<ProgramasProps> = ({ userName }) => {
         }
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        const newKey = Math.max(...programas.map(p => p.key)) + 1;
+    // Nuevo handleSubmit que recibe los valores del Form global
+    const handleSubmit = (values: { nombre: string; tipo: string }) => {
+        const newKey = programas.length > 0 
+            ? Math.max(...programas.map(p => typeof p.key === 'number' ? p.key : 0)) + 1
+            : 1;
 
         const newPrograma: Programa = {
             key: editingPrograma ? editingPrograma.key : newKey,
             id_programa: editingPrograma ? editingPrograma.id_programa : newKey,
-            nombre: formData.nombre,
-            tipo: Number(formData.tipo)
+            nombre: values.nombre,
+            tipo: Number(values.tipo)
         };
 
         if (editingPrograma) {
@@ -54,12 +50,10 @@ const Programas: React.FC<ProgramasProps> = ({ userName }) => {
 
         setEditingPrograma(null);
         setShowModal(false);
-        setFormData({ nombre: '', tipo: '' });
     };
 
     const handleCreate = () => {
         setEditingPrograma(null);
-        setFormData({ nombre: '', tipo: '' });
         setShowModal(true);
     };
 
@@ -96,40 +90,27 @@ const Programas: React.FC<ProgramasProps> = ({ userName }) => {
                 </main>
             </div>
             {showModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-                    <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md relative">
-                        <button onClick={() => setShowModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-200">
-                            <X size={20} />
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-slate-900 p-6 rounded-lg shadow-lg w-full max-w-md relative">
+                        <button
+                            className="absolute top-2 right-2 text-slate-400 hover:text-red-500"
+                            onClick={() => {
+                                setShowModal(false);
+                                setEditingPrograma(null);
+                            }}
+                        >
+                            <X />
                         </button>
-                        <h2 className="text-2xl font-bold text-white mb-4">
-                            {editingPrograma ? 'Editar Programa' : 'Nuevo Programa'}
-                        </h2>
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-300">Nombre</label>
-                                    <input
-                                        type="text"
-                                        value={formData.nombre}
-                                        onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-300">Tipo</label>
-                                    <input
-                                        type="text"
-                                        value={formData.tipo}
-                                        onChange={(e) => setFormData({ ...formData, tipo: e.target.value })}
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                    />
-                                </div>
-                            </div>
-                            <div className="flex justify-end space-x-2">
-                                <Boton type="button" color="secondary" onClick={() => setShowModal(false)}>Cancelar</Boton>
-                                <Boton type="submit" color="primary">{editingPrograma ? 'Actualizar' : 'Crear'}</Boton>
-                            </div>
-                        </form>
+                        <h2 className="text-2xl font-bold mb-4 text-emerald-300">{editingPrograma ? 'Editar Programa' : 'Nuevo Programa'}</h2>
+                        <Form
+                            fields={[
+                                { key: 'nombre', label: 'Nombre', type: 'text', required: true },
+                                { key: 'tipo', label: 'Tipo', type: 'text', required: true }
+                            ]}
+                            onSubmit={handleSubmit}
+                            buttonText={editingPrograma ? 'Actualizar' : 'Crear'}
+                            initialValues={editingPrograma ? { nombre: editingPrograma.nombre, tipo: editingPrograma.tipo.toString() } : { nombre: '', tipo: '' }}
+                        />
                     </div>
                 </div>
             )}
